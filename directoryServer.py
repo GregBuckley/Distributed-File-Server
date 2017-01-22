@@ -14,6 +14,8 @@ dirServer = Flask(__name__)
 fileServers = {1 : 'http://localhost:5010/serverOne',
 				2 : 'http://localhost:5020/serverTwo'}
 
+FILE_DATABASE = "dirserdb.db"
+
 #Recieve File
 #Check if file has been sent before
 #Update Pre existing file or write as new
@@ -58,7 +60,36 @@ def upload_File(filenameToSend):
 		else:
 			print ("DO NOT ADD")
 
+def createDatabase():
+	if (not os.path.isfile(FILE_DATABASE)):
+		print ("Create DataBase %s" % FILE_DATABASE)
+		connectionMaster = sqlite3.connect(FILE_DATABASE)
+		cursorMaster = connectionMaster.cursor()
+		#Create columns in Data Base
+		sql_command = """CREATE TABLE fileDirectory ( filename VARCHAR(30) PRIMARY KEY, master_server VARCHAR(100),replicate_server VARCHAR(100) , hashValue VARCHAR (200));"""
+		cursorMaster.execute(sql_command)
+		connectionMaster.commit()
 
+		#Add first values into database
+		sql_command = "INSERT INTO fileDirectory VALUES(?,?,?,?);"
+		params = ("File name", "master server name", "replicate server name", "hash value of file")
+		cursorMaster.execute(sql_command, params)
+		connectionMaster.commit()		
+	else: 
+		print ("DB %s already exits:" % FILE_DATABASE)
+		#print database
+		printDB("fileDirectory", "dirserdb.db")
+
+
+def printDB(nameOfDB, DataBase_NAME):
+	connection = sqlite3.connect(DataBase_NAME)
+	cursor = connection.cursor()
+	cursor.execute("SELECT * FROM {}".format(nameOfDB))
+	db = cursor.fetchall()
+	print ("-------------------------------")
+	for x in db:
+		print (x)
+	print ("-------------------------------")
 
 def get_cd():
 	res = os.getcwd()
@@ -66,6 +97,8 @@ def get_cd():
 
 if __name__ == '__main__':
 	cwd = os.getcwd()
+	print("START THEM UP BURBY")
+	createDatabase()
 	if not os.path.isdir(cwd + "\\" + DIRECTORY):
 		os.mkdir(cwd + "\\" + DIRECTORY)
 	dirServer.run(host = 'localhost', port=5030, debug = True)
