@@ -8,23 +8,21 @@ import json
 filesArray =[]
 
 clientApp = Flask(__name__)
-fileServers = {1 : 'http://localhost:5010/serverOne',
-				2 : 'http://localhost:5020/serverTwo'}
+#fileServers = {1 : 'http://localhost:5010/serverOne',
+#				2 : 'http://localhost:5020/serverTwo'}
+
+fileServers = {1 : 'http://localhost:5030/dirServer'}
 
 def upload_File(filenameToSend):
 	for fileServerID in fileServers:
 		url = fileServers[fileServerID]
 		url = url+"/upload"
-		cwd = os.getcwd()
-		f = cwd + "\\" + filenameToSend
-		fileToSend={
-			'file' : (filenameToSend, open(f, 'rb' ))
-		}
+		cwd = os.getcwd()		#current dir
+		f = cwd + "\\" + filenameToSend	
+		fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
 		print (fileToSend)
 		print (filenameToSend)
-		dataToSend={
-		'fileName' : filenameToSend
-		}
+		dataToSend={	'fileName' : filenameToSend	}
 		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
 		print (serverResponse)
         

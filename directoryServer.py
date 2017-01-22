@@ -3,11 +3,13 @@ from flask import abort
 from flask import make_response
 from flask import request
 from flask import g
+import requests
+
 import sqlite3
 import os
 filesArray =[]
 DIRECTORY = "\DIRECTORY_Server\\"
-fileServerOne = Flask(__name__)
+dirServer = Flask(__name__)
 
 fileServers = {1 : 'http://localhost:5010/serverOne',
 				2 : 'http://localhost:5020/serverTwo'}
@@ -16,7 +18,7 @@ fileServers = {1 : 'http://localhost:5010/serverOne',
 #Check if file has been sent before
 #Update Pre existing file or write as new
 #Put into all available file servers and update Database
-@fileServerOne.route('/dirServer/upload', methods = ['POST'])
+@dirServer.route('/dirServer/upload', methods = ['POST'])
 def recieve_File():
 	if not request.files:
 		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 404)
@@ -36,14 +38,25 @@ def upload_File(filenameToSend):
 	for fileServerID in fileServers:
 		url = fileServers[fileServerID]
 		url = url+"/upload"
+		print("File to send = %c", filenameToSend)
 		cwd = os.getcwd()		#current dir
 		f = cwd + "\\" + filenameToSend	
 		fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
 		print (fileToSend)
 		print (filenameToSend)
 		dataToSend={	'fileName' : filenameToSend	}
-		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
-		print (serverResponse)
+		sentSuccessfully = 0
+		try:
+			serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
+			sentSuccessfully=1
+		except:    # This is the correct syntax
+			print ("Could NOT connect!")
+
+		if (sentSuccessfully ==1):
+			print (serverResponse)
+			print ( "ADD TO LIST")
+		else:
+			print ("DO NOT ADD")
 
 
 
@@ -55,6 +68,6 @@ if __name__ == '__main__':
 	cwd = os.getcwd()
 	if not os.path.isdir(cwd + "\\" + DIRECTORY):
 		os.mkdir(cwd + "\\" + DIRECTORY)
-	fileServerOne.run(host = 'localhost', port=5020, debug = True)
+	dirServer.run(host = 'localhost', port=5030, debug = True)
 
 
