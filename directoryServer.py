@@ -4,6 +4,7 @@ from flask import make_response
 from flask import request
 from flask import g
 import requests
+from random import randint
 
 import sqlite3
 import os
@@ -31,34 +32,56 @@ def recieve_File():
 	data = request.form['fileName']
 	print ("CD = " + cd+ "\\" + DIRECTORY) 
 	f.save(cd+ "\\" + DIRECTORY + nameOfFile)
-	upload_File(nameOfFile)
+
+	hashValue = hash(data)
+	print("Data = %d", hashValue)
+
+	Master = randint(1,len(fileServers))
+	RepServer = randint(1,len(fileServers))
+	
+	while (RepServer==Master):
+		RepServer= randint(1,len(fileServers))
+
+	print(Master)
+	print(RepServer)
+	upload_File(nameOfFile,Master)
+	upload_File(nameOfFile,RepServer)
+
+	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
+
+	
+	#printDB("fileDirectory", "dirserdb.db")	
+
+
+
+
+
 	return ('file uploaded successfully', 201)
 
 #Upload file into all available databases as a new file or update previous
 #If pre existing, mark "not up to date" on database for fileservers who are not up to date
-def upload_File(filenameToSend):
-	for fileServerID in fileServers:
-		url = fileServers[fileServerID]
-		url = url+"/upload"
-		print("File to send = %c", filenameToSend)
-		cwd = os.getcwd()		#current dir
-		f = cwd + "\\" + filenameToSend	
-		fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
-		print (fileToSend)
-		print (filenameToSend)
-		dataToSend={	'fileName' : filenameToSend	}
-		sentSuccessfully = 0
-		try:
-			serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
-			sentSuccessfully=1
-		except:    # This is the correct syntax
-			print ("Could NOT connect!")
+def upload_File(filenameToSend,fileServerID):
+	url = fileServers[fileServerID]
+	url = url+"/upload"
+	print("File to send = %c", filenameToSend)
+	cwd = os.getcwd()		#current dir
+	f = cwd + "\\" + filenameToSend	
+	fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
+	print (fileToSend)
+	print (filenameToSend)
+	dataToSend={	'fileName' : filenameToSend	}
+	sentSuccessfully = 0
+	try:
+		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
+		sentSuccessfully=1
+	except:    # This is the correct syntax
+		print ("Could NOT connect!")
 
-		if (sentSuccessfully ==1):
-			print (serverResponse)
-			print ( "ADD TO LIST")
-		else:
-			print ("DO NOT ADD")
+	if (sentSuccessfully ==1):
+		print (serverResponse)
+		print ( "ADD TO LIST")
+	else:
+		print ("DO NOT ADD")
 
 def createDatabase():
 	if (not os.path.isfile(FILE_DATABASE)):
@@ -90,6 +113,16 @@ def printDB(nameOfDB, DataBase_NAME):
 	for x in db:
 		print (x)
 	print ("-------------------------------")
+
+def addRowToDB(nameOfDB, fileName,master,rep,hash):
+	connectionMaster = sqlite3.connect(FILE_DATABASE)
+	cursorMaster = connectionMaster.cursor()
+	sql_command = "INSERT INTO fileDirectory VALUES(?,?,?,?);"
+	params = (fileName, master, rep, hash)
+	cursorMaster.execute(sql_command, params)
+	connectionMaster.commit()	
+	printDB("fileDirectory", nameOfDB)
+
 
 def get_cd():
 	res = os.getcwd()
