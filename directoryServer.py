@@ -48,14 +48,8 @@ def recieve_File():
 	upload_File(nameOfFile,RepServer)
 
 	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
-
 	
 	#printDB("fileDirectory", "dirserdb.db")	
-
-
-
-
-
 	return ('file uploaded successfully', 201)
 
 #Upload file into all available databases as a new file or update previous
