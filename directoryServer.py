@@ -46,10 +46,10 @@ def recieve_File():
 	print(RepServer)
 	upload_File(nameOfFile,Master)
 	upload_File(nameOfFile,RepServer)
-
 	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
-	
+
 	#printDB("fileDirectory", "dirserdb.db")	
+
 	return ('file uploaded successfully', 201)
 
 #Upload file into all available databases as a new file or update previous
@@ -98,6 +98,36 @@ def createDatabase():
 		printDB("fileDirectory", "dirserdb.db")
 
 
+#Returns the address of the file server for the client to contact to recieve their file
+@dirServer.route('/dirServer/read', methods = ['GET'])
+def get_Location_Of_File():
+	responseDictionary = request.json
+	filenameToGet= responseDictionary['file']
+	connectionMaster = sqlite3.connect(FILE_DATABASE)
+	cursorMaster = connectionMaster.cursor()
+	cursorMaster.execute("SELECT master_server FROM fileDirectory WHERE filename = ?;", (filenameToGet,))
+	master_server = cursorMaster.fetchall()
+	print("master server is equal to = ")
+	print(master_server)
+	if (not master_server):
+		print("Not HEYRE")
+		return 0
+	else:
+		print(master_server)
+		print("Server = ", master_server[0][0])
+		return fileServers[int(master_server[0][0])], 200
+
+
+
+
+
+
+
+
+
+
+
+
 def printDB(nameOfDB, DataBase_NAME):
 	connection = sqlite3.connect(DataBase_NAME)
 	cursor = connection.cursor()
@@ -116,6 +146,7 @@ def addRowToDB(nameOfDB, fileName,master,rep,hash):
 	cursorMaster.execute(sql_command, params)
 	connectionMaster.commit()	
 	printDB("fileDirectory", nameOfDB)
+
 
 
 def get_cd():

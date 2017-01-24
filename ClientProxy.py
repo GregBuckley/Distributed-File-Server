@@ -25,13 +25,29 @@ def upload_File(filenameToSend):
 		dataToSend={	'fileName' : filenameToSend	}
 		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
 		print (serverResponse)
-        
+
+
+def read_File(filenameToRead):
+	url = fileServers[1] + "/read"
+	fileToGet={	'file' : filenameToRead}
+	serverResponse= requests.get(url, json=fileToGet)
+	print("The file is stored here")
+	d=serverResponse.content
+	print(d)
+	
+
+
+
+
+
 if __name__ == '__main__':
 	while 1:
-		command = input("Please enter command: 1=upload")
+		command = input("Please enter command: 1=upload 2= read\n")
 		commandArray = command.split(" ")
 		if(command[0] == "1"):
 			upload_File(commandArray[1])
+		if(command[0] == "2"):
+			read_File(commandArray[1])
 
 	clientApp.run(host = 'localhost', port=5000, debug = True)
 
