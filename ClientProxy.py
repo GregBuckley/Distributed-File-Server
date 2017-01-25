@@ -7,6 +7,7 @@ import os
 import json
 filesArray =[]
 
+
 clientApp = Flask(__name__)
 #fileServers = {1 : 'http://localhost:5010/serverOne',
 #				2 : 'http://localhost:5020/serverTwo'}
@@ -27,13 +28,42 @@ def upload_File(filenameToSend):
 		print (serverResponse)
 
 
-def read_File(filenameToRead):
+def readFile(filenameToRead):
+	fileServer = findFileServer(filenameToRead)
+	if(fileServer != None):
+		url = fileServer + "/read"
+		print("URL =" + url)
+		fileToGet={	'file' : filenameToRead}
+		serverResponse= requests.get(url, json=fileToGet)
+		if(serverResponse.status_code==400):
+			print("Error, file not found")
+
+		else:
+			cwd = os.getcwd()	
+			fileRecieved = open(cwd+"\\" + filenameToRead,'wb')
+			fileRecieved.write(serverResponse.content)
+			fileRecieved.close()
+			print("Response = ")
+			print(serverResponse)
+	else:
+		print("File not found")
+
+
+
+
+def findFileServer(filenameToFind):
 	url = fileServers[1] + "/read"
-	fileToGet={	'file' : filenameToRead}
+	fileToGet={	'file' : filenameToFind}
 	serverResponse= requests.get(url, json=fileToGet)
-	print("The file is stored here")
-	d=serverResponse.content
-	print(d)
+	if(serverResponse.status_code==400):
+		print("Error, file not found on directory server")
+		return None
+	else:
+		print("The file is stored here")
+		content=serverResponse.content
+		serverId = content.decode('utf-8')
+		print(serverId)
+		return serverId
 	
 
 
@@ -47,7 +77,7 @@ if __name__ == '__main__':
 		if(command[0] == "1"):
 			upload_File(commandArray[1])
 		if(command[0] == "2"):
-			read_File(commandArray[1])
+			readFile(commandArray[1])
 
 	clientApp.run(host = 'localhost', port=5000, debug = True)
 

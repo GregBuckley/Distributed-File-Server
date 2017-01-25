@@ -10,7 +10,7 @@ fileServerTwo = Flask(__name__)
 @fileServerTwo.route('/serverTwo/upload', methods = ['POST'])
 def recieve_File():
 	if not request.files:
-		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 404)
+		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 405)
 	cd = get_cd()
 	print ("CD = " + cd) 
 	f = request.files['file']
@@ -19,6 +19,22 @@ def recieve_File():
 	print ("CD = " + cd+ "\\" + DIRECTORY) 
 	f.save(cd+ "\\" + DIRECTORY + nameOfFile)
 	return ('file uploaded successfully', 201)
+
+@fileServerTwo.route('/serverTwo/read', methods = ['GET'])
+def read_File():
+	print("ststststs")
+	responseDictionary = request.json
+	filenameToGet= responseDictionary['file']
+	print("Looking for file:")
+	print(filenameToGet)
+	cd = get_cd()		#current dir
+	f = cd +"\\" + DIRECTORY + filenameToGet	
+	print(f)
+	try:
+		fileToGet= open(f,'r')		
+		return (send_file(f),200)
+	except:
+		abort(400)
 
 def get_cd():
 	res = os.getcwd()

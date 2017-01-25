@@ -111,7 +111,7 @@ def get_Location_Of_File():
 	print(master_server)
 	if (not master_server):
 		print("Not HEYRE")
-		return 0
+		abort(400)
 	else:
 		print(master_server)
 		print("Server = ", master_server[0][0])
