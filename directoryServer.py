@@ -51,7 +51,6 @@ def recieve_File():
 		RepServer = randint(1,len(fileServers))
 		while (RepServer==Master):
 			RepServer= randint(1,len(fileServers))
-		addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
 	else:
 		print("Updating existing file")
 		Master = int(master_server[0][0])
@@ -59,8 +58,7 @@ def recieve_File():
 		replicate_server = cursorMaster.fetchall()
 		RepServer = int(replicate_server[0][0])
 
-	
-	#upload_File(nameOfFile,[1,2],f)
+	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
 	printDB("fileDirectory", "dirserdb.db")	
 	servers = {'Master' : fileServers[Master], 'Replicate' : fileServers[RepServer]}
 	return make_response(jsonify(servers), 200)
@@ -80,6 +78,9 @@ def upload_File(filenameToSend,servers,f):
 		#	sentSuccessfully=1
 		except:    # This is the correct syntax
 			print ("Could NOT connect!")
+
+
+
 
 
 def createDatabase():
@@ -123,6 +124,26 @@ def get_Location_Of_File():
 		return fileServers[int(master_server[0][0])], 200
 
 
+
+
+
+#Returns the hash value of a file in the directory
+@dirServer.route('/dirServer/checkHash', methods = ['GET'])
+def get_Location_Of_File():
+	responseDictionary = request.json
+	filenameToGet= responseDictionary['file']
+	connectionMaster = sqlite3.connect(FILE_DATABASE)
+	cursorMaster = connectionMaster.cursor()
+	cursorMaster.execute("SELECT hashValue FROM fileDirectory WHERE filename = ?;", (filenameToGet,))
+	HashValue = cursorMaster.fetchall()
+	print("Hash Value is equal to = ")
+	print(HashValue)
+	if (not HashValue):
+		print("Not HERE")
+		abort(400)
+	else:
+		print("HashValue = ", HashValue[0][0])
+		return fileServers[int(HashValue[0][0])], 200
 
 
 

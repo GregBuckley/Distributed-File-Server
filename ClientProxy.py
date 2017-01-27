@@ -5,6 +5,7 @@ from flask import request
 import requests
 import os
 import json
+import shutil
 import hashlib
 filesArray =[]
 
@@ -39,6 +40,10 @@ def upload_File(filenameToSend):
 		print(masterurl)
 		print(repurl)
 
+		#Save in Cache
+		path = cwd + os.path.sep + "Cache" + os.path.sep + filenameToSend	
+		shutil.copyfile(f, path)
+
 
 		#Send files
 		try:
@@ -58,7 +63,7 @@ def readFile(filenameToRead):
 		fileToGet={	'file' : filenameToRead}
 		serverResponse= requests.get(url, json=fileToGet)
 		if(serverResponse.status_code==400):
-			print("Error, file not found")
+			print("Error, file not found in fileServer")
 
 		else:
 			cwd = os.getcwd()	
@@ -86,6 +91,25 @@ def findFileServer(filenameToFind):
 		serverId = content.decode('utf-8')
 		print(serverId)
 		return serverId
+
+def hashValid(filenameToCheck):
+	url = fileServers[1]+"/returnHash"
+	cwd = os.getcwd()		#current dir
+	f = cwd + os.path.sep + "Cache" + os.path.sep + filenameToSend	
+	hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
+	dataToSend={	'fileName' : filenameToSend	,'hashvalue' : hashvalue}
+	serverResponse= requests.get(url, data=dataToSend)
+
+	if(serverResponse.status_code==400):
+		print("Error, file not found on directory server")
+		return None
+	else:
+		print("The file is stored here")
+		content=serverResponse.content
+		hashvalue = content.decode('utf-8')
+		print(hashvalue)
+		return hashvalue
+
 	
 
 
