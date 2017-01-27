@@ -5,6 +5,7 @@ from flask import request
 import requests
 import os
 import json
+import hashlib
 filesArray =[]
 
 
@@ -19,12 +20,33 @@ def upload_File(filenameToSend):
 		url = fileServers[fileServerID]
 		url = url+"/upload"
 		cwd = os.getcwd()		#current dir
-		f = cwd + "\\" + filenameToSend	
+		f = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
+		hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
+		print("x = %s" %hashvalue)
 		fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
-		print (fileToSend)
-		print (filenameToSend)
-		dataToSend={	'fileName' : filenameToSend	}
-		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
+
+		f2 = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
+		fileToSend2={	'file' : (filenameToSend, open(f2, 'rb' ))	}
+		
+		dataToSend={	'fileName' : filenameToSend	,'hashvalue' : hashvalue}
+		print("file to send = ")
+		print(fileToSend)
+		#Get url locations to send
+		serverResponse= requests.post(url,data=dataToSend)
+		content= json.loads((serverResponse.content).decode())
+		masterurl = content['Master']
+		repurl = content['Replicate']
+		print(masterurl)
+		print(repurl)
+
+
+		#Send files
+		try:
+			serverResponse= requests.post(masterurl+"/upload",files = fileToSend,data=dataToSend)
+			serverResponse= requests.post(repurl+"/upload",files = fileToSend2,data=dataToSend)
+		except:    # This is the correct syntax
+			print ("Could NOT connect!")
+
 		print (serverResponse)
 
 

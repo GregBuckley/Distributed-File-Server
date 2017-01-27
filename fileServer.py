@@ -5,7 +5,7 @@ from flask import request
 from flask import send_file
 import os
 filesArray =[]
-DIRECTORY = "\SERVER_ONE_FOLDER\\"
+DIRECTORY = "SERVER_ONE_FOLDER"
 fileServerOne = Flask(__name__)
 
 #Function which takes a file as input and stores the file
@@ -16,10 +16,10 @@ def recieve_File():
 	cd = get_cd()
 	print ("CD = " + cd) 
 	f = request.files['file']
+	print(f)
 	nameOfFile = request.form['fileName']
-	data = request.form['fileName']
 	print ("CD = " + cd+ "\\" + DIRECTORY) 
-	f.save(cd+ "\\" + DIRECTORY + nameOfFile)
+	f.save(cd+ os.path.sep + DIRECTORY + os.path.sep + nameOfFile)
 	return ('file uploaded successfully', 201)
 
 
@@ -32,10 +32,10 @@ def read_File():
 	print("Looking for file:")
 	print(filenameToGet)
 	cd = get_cd()		#current dir
-	f = cd +"\\" + DIRECTORY + filenameToGet	
+	f = cd +os.path.sep  + DIRECTORY + os.path.sep + filenameToGet	
 	print(f)
 	try:
-		fileToGet= open(f,'r')		
+		fileToGet= open(f,'rb')		
 		return (send_file(f),200)
 	except:
 		abort (400)

@@ -4,7 +4,9 @@ from flask import make_response
 from flask import request
 from flask import g
 import requests
+import copy
 from random import randint
+
 
 import sqlite3
 import os
@@ -23,59 +25,62 @@ FILE_DATABASE = "dirserdb.db"
 #Put into all available file servers and update Database
 @dirServer.route('/dirServer/upload', methods = ['POST'])
 def recieve_File():
-	if not request.files:
+	if not request.form:
 		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 404)
 	cd = get_cd()
 	print ("CD = " + cd) 
-	f = request.files['file']
 	nameOfFile = request.form['fileName']
 	data = request.form['fileName']
 	print ("CD = " + cd+ "\\" + DIRECTORY) 
-	f.save(cd+ "\\" + DIRECTORY + nameOfFile)
+	#f.save(cd+ "\\" + DIRECTORY + nameOfFile)
 
-	hashValue = hash(data)
+	hashValue = request.form['hashValue']
 	print("Data = %d", hashValue)
 
-	Master = randint(1,len(fileServers))
-	RepServer = randint(1,len(fileServers))
-	
-	while (RepServer==Master):
-		RepServer= randint(1,len(fileServers))
 
-	print(Master)
-	print(RepServer)
-	upload_File(nameOfFile,Master)
-	upload_File(nameOfFile,RepServer)
-	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
-
-	#printDB("fileDirectory", "dirserdb.db")	
-
-	return ('file uploaded successfully', 201)
-
-#Upload file into all available databases as a new file or update previous
-#If pre existing, mark "not up to date" on database for fileservers who are not up to date
-def upload_File(filenameToSend,fileServerID):
-	url = fileServers[fileServerID]
-	url = url+"/upload"
-	print("File to send = %c", filenameToSend)
-	cwd = os.getcwd()		#current dir
-	f = cwd + "\\" + filenameToSend	
-	fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
-	print (fileToSend)
-	print (filenameToSend)
-	dataToSend={	'fileName' : filenameToSend	}
-	sentSuccessfully = 0
-	try:
-		serverResponse= requests.post(url,files = fileToSend,data=dataToSend)
-		sentSuccessfully=1
-	except:    # This is the correct syntax
-		print ("Could NOT connect!")
-
-	if (sentSuccessfully ==1):
-		print (serverResponse)
-		print ( "ADD TO LIST")
+	#FIND IF FILE ALREADY EXISTS		
+	connectionMaster = sqlite3.connect(FILE_DATABASE)
+	cursorMaster = connectionMaster.cursor()
+	cursorMaster.execute("SELECT master_server FROM fileDirectory WHERE filename = ?;", (nameOfFile,))
+	master_server = cursorMaster.fetchall()
+	RepServer=0
+	Master=0
+	if not master_server:
+		print("Uploading file for first time")
+		Master = randint(1,len(fileServers))
+		RepServer = randint(1,len(fileServers))
+		while (RepServer==Master):
+			RepServer= randint(1,len(fileServers))
+		addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
 	else:
-		print ("DO NOT ADD")
+		print("Updating existing file")
+		Master = int(master_server[0][0])
+		cursorMaster.execute("SELECT replicate_server FROM fileDirectory WHERE filename = ?;", (nameOfFile,))
+		replicate_server = cursorMaster.fetchall()
+		RepServer = int(replicate_server[0][0])
+
+	
+	#upload_File(nameOfFile,[1,2],f)
+	printDB("fileDirectory", "dirserdb.db")	
+	servers = {'Master' : fileServers[Master], 'Replicate' : fileServers[RepServer]}
+	return make_response(jsonify(servers), 200)
+
+
+
+def upload_File(filenameToSend,servers,f):
+	for fileServerID in servers:
+		url = fileServers[fileServerID]
+		url = url+"/upload"
+		print("File to send = %c", filenameToSend)
+		print (fileToSend)
+		dataToSend={	'fileName' : filenameToSend	}
+	#	sentSuccessfully = 0
+		try:
+			serverResponse= requests.post(url,files = f,data=dataToSend)
+		#	sentSuccessfully=1
+		except:    # This is the correct syntax
+			print ("Could NOT connect!")
+
 
 def createDatabase():
 	if (not os.path.isfile(FILE_DATABASE)):
@@ -159,6 +164,6 @@ if __name__ == '__main__':
 	createDatabase()
 	if not os.path.isdir(cwd + "\\" + DIRECTORY):
 		os.mkdir(cwd + "\\" + DIRECTORY)
-	dirServer.run(host = 'localhost', port=5030, debug = True)
+	dirServer.run(host = 'localhost', port=5030, debug = False)
 
 
