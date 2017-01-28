@@ -61,22 +61,40 @@ def readFile(filenameToRead):
 		url = fileServer + "/read"
 		print("URL =" + url)
 		fileToGet={	'file' : filenameToRead}
-		serverResponse= requests.get(url, json=fileToGet)
-		if(serverResponse.status_code==400):
-			print("Error, file not found in fileServer")
+		if(getCacheHash(filenameToRead) != findHashValue(filenameToRead)):
+			print("Local file not up to date, loading from file server")
+			serverResponse= requests.get(url, json=fileToGet)
+			if(serverResponse.status_code==400):
+				print("Error, file not found in fileServer")
 
+			else:
+				cwd = os.getcwd()	
+				fileRecieved = open(cwd+"\\" + filenameToRead,'wb')
+				fileRecieved.write(serverResponse.content)
+				fileRecieved.close()
+				#Update Cache
+				f = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToRead	
+				path = cwd + os.path.sep + "Cache" + os.path.sep + filenameToRead	
+				shutil.copyfile(f, path)
+				print("Response = ")
+				print(serverResponse)
 		else:
-			cwd = os.getcwd()	
-			fileRecieved = open(cwd+"\\" + filenameToRead,'wb')
-			fileRecieved.write(serverResponse.content)
-			fileRecieved.close()
-			print("Response = ")
-			print(serverResponse)
+			print("Cached file is up to date")
+
 	else:
 		print("File not found")
 
 
-
+def getCacheHash(filenameToFind):
+	try: 
+		path = os.getcwd() + os.path.sep + "Cache" + os.path.sep + filenameToFind
+		print("path = " + path)
+		hashvalue = hashlib.md5(open(path,'rb').read()).hexdigest()
+		print("hashvalue in cache = " + hashvalue)
+		return hashvalue
+	except:
+		print("Could not find hash in cache")
+		return 0
 
 def findFileServer(filenameToFind):
 	url = fileServers[1] + "/read"
@@ -92,22 +110,22 @@ def findFileServer(filenameToFind):
 		print(serverId)
 		return serverId
 
-def hashValid(filenameToCheck):
+
+def findHashValue(filenameToCheck):
 	url = fileServers[1]+"/returnHash"
 	cwd = os.getcwd()		#current dir
-	f = cwd + os.path.sep + "Cache" + os.path.sep + filenameToSend	
+	f = cwd + os.path.sep + "Cache" + os.path.sep + filenameToCheck	
 	hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
-	dataToSend={	'fileName' : filenameToSend	,'hashvalue' : hashvalue}
+	dataToSend={	'fileName' : filenameToCheck	,'hashvalue' : hashvalue}
 	serverResponse= requests.get(url, data=dataToSend)
 
 	if(serverResponse.status_code==400):
 		print("Error, file not found on directory server")
 		return None
 	else:
-		print("The file is stored here")
 		content=serverResponse.content
 		hashvalue = content.decode('utf-8')
-		print(hashvalue)
+		print("Hash value in file server = " + hashvalue)
 		return hashvalue
 
 	

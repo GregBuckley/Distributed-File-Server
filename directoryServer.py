@@ -33,8 +33,9 @@ def recieve_File():
 	data = request.form['fileName']
 	print ("CD = " + cd+ "\\" + DIRECTORY) 
 	#f.save(cd+ "\\" + DIRECTORY + nameOfFile)
-
-	hashValue = request.form['hashValue']
+	print("jkd")
+	hashValue = request.form['hashvalue']
+#	hashValue='34343'
 	print("Data = %d", hashValue)
 
 
@@ -51,14 +52,25 @@ def recieve_File():
 		RepServer = randint(1,len(fileServers))
 		while (RepServer==Master):
 			RepServer= randint(1,len(fileServers))
+
+		addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
+
 	else:
 		print("Updating existing file")
 		Master = int(master_server[0][0])
 		cursorMaster.execute("SELECT replicate_server FROM fileDirectory WHERE filename = ?;", (nameOfFile,))
 		replicate_server = cursorMaster.fetchall()
-		RepServer = int(replicate_server[0][0])
-
-	addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
+		RepServer = int(replicate_server[0][0])	
+		print("RepServer = ")
+		print("Hash value to insert = ")
+		print(RepServer)
+		com = "UPDATE fileDirectory SET hashValue = ? WHERE filename = ?;"
+		print(hashValue)
+		print(nameOfFile)
+		params = (hashValue,nameOfFile)
+		cursorMaster.execute(com,params)
+		connectionMaster.commit()
+		print("lalala")
 	printDB("fileDirectory", "dirserdb.db")	
 	servers = {'Master' : fileServers[Master], 'Replicate' : fileServers[RepServer]}
 	return make_response(jsonify(servers), 200)
@@ -128,10 +140,10 @@ def get_Location_Of_File():
 
 
 #Returns the hash value of a file in the directory
-@dirServer.route('/dirServer/checkHash', methods = ['GET'])
-def get_Location_Of_File():
-	responseDictionary = request.json
-	filenameToGet= responseDictionary['file']
+@dirServer.route('/dirServer/returnHash', methods = ['GET'])
+def get_Hash_Of_File():
+	#responseDictionary = request.json
+	filenameToGet= nameOfFile = request.form['fileName']
 	connectionMaster = sqlite3.connect(FILE_DATABASE)
 	cursorMaster = connectionMaster.cursor()
 	cursorMaster.execute("SELECT hashValue FROM fileDirectory WHERE filename = ?;", (filenameToGet,))
@@ -143,7 +155,7 @@ def get_Location_Of_File():
 		abort(400)
 	else:
 		print("HashValue = ", HashValue[0][0])
-		return fileServers[int(HashValue[0][0])], 200
+		return HashValue[0][0], 200
 
 
 
