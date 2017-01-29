@@ -92,9 +92,6 @@ def upload_File(filenameToSend,servers,f):
 			print ("Could NOT connect!")
 
 
-
-
-
 def createDatabase():
 	if (not os.path.isfile(FILE_DATABASE)):
 		print ("Create DataBase %s" % FILE_DATABASE)
@@ -143,7 +140,7 @@ def get_Location_Of_File():
 @dirServer.route('/dirServer/returnHash', methods = ['GET'])
 def get_Hash_Of_File():
 	#responseDictionary = request.json
-	filenameToGet= nameOfFile = request.form['fileName']
+	filenameToGet = request.form['fileName']
 	connectionMaster = sqlite3.connect(FILE_DATABASE)
 	cursorMaster = connectionMaster.cursor()
 	cursorMaster.execute("SELECT hashValue FROM fileDirectory WHERE filename = ?;", (filenameToGet,))

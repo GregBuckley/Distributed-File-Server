@@ -11,54 +11,59 @@ filesArray =[]
 
 
 clientApp = Flask(__name__)
-#fileServers = {1 : 'http://localhost:5010/serverOne',
-#				2 : 'http://localhost:5020/serverTwo'}
 
-fileServers = {1 : 'http://localhost:5030/dirServer'}
+
+dirServer = 'http://localhost:5030/dirServer'
+lockServerURL = 'http://localhost:5050/lockServer'
 
 def upload_File(filenameToSend):
-	for fileServerID in fileServers:
-		url = fileServers[fileServerID]
-		url = url+"/upload"
-		cwd = os.getcwd()		#current dir
-		f = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
-		hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
-		print("x = %s" %hashvalue)
-		fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
 
-		f2 = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
-		fileToSend2={	'file' : (filenameToSend, open(f2, 'rb' ))	}
-		
-		dataToSend={	'fileName' : filenameToSend	,'hashvalue' : hashvalue}
-		print("file to send = ")
-		print(fileToSend)
-		#Get url locations to send
+	url = dirServer+"/upload"
+	cwd = os.getcwd()		#current dir
+	f = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
+	hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
+	print("x = %s" %hashvalue)
+	fileToSend={	'file' : (filenameToSend, open(f, 'rb' ))	}
+	f2 = cwd + os.path.sep + "UserStorage" + os.path.sep + filenameToSend	
+	fileToSend2={	'file' : (filenameToSend, open(f2, 'rb' ))	}
+	dataToSend={	'fileName' : filenameToSend	,'hashvalue' : hashvalue}
+	fileName={	'fileName' : filenameToSend}
+	print("file to send = ")
+	print(fileToSend)
+	lockServerResponse= requests.get(lockServerURL+'/read',data=fileName)	
+	#Get url locations to send
+	#serverResponse= requests.post(url,data=dataToSend)
+	lockStatus= lockServerResponse.content
+	lockStatus = lockStatus.decode('utf-8')
+	print("Lock status is equal to " + lockStatus)
+	if(lockStatus == 'OPEN'):
+		#file is open, can write to it
 		serverResponse= requests.post(url,data=dataToSend)
 		content= json.loads((serverResponse.content).decode())
 		masterurl = content['Master']
 		repurl = content['Replicate']
 		print(masterurl)
 		print(repurl)
-
 		#Save in Cache
 		path = cwd + os.path.sep + "Cache" + os.path.sep + filenameToSend	
 		shutil.copyfile(f, path)
-
-
 		#Send files
 		try:
 			serverResponse= requests.post(masterurl+"/upload",files = fileToSend,data=dataToSend)
 			serverResponse= requests.post(repurl+"/upload",files = fileToSend2,data=dataToSend)
 		except:    # This is the correct syntax
 			print ("Could NOT connect!")
-
 		print (serverResponse)
+		requests.post(lockServerURL+'/unlock',data=fileName)	
+		print("File is unlocked")
+	else:
+		print("File to write to is currently locked. Please try again later")
 
 
 def readFile(filenameToRead):
-	fileServer = findFileServer(filenameToRead)
-	if(fileServer != None):
-		url = fileServer + "/read"
+	file_Server = findFileServer(filenameToRead)
+	if(file_Server != None):
+		url = file_Server + "/read"
 		print("URL =" + url)
 		fileToGet={	'file' : filenameToRead}
 		if(getCacheHash(filenameToRead) != findHashValue(filenameToRead)):
@@ -97,7 +102,7 @@ def getCacheHash(filenameToFind):
 		return 0
 
 def findFileServer(filenameToFind):
-	url = fileServers[1] + "/read"
+	url = dirServer + "/read"
 	fileToGet={	'file' : filenameToFind}
 	serverResponse= requests.get(url, json=fileToGet)
 	if(serverResponse.status_code==400):
@@ -112,7 +117,7 @@ def findFileServer(filenameToFind):
 
 
 def findHashValue(filenameToCheck):
-	url = fileServers[1]+"/returnHash"
+	url = dirServer+"/returnHash"
 	cwd = os.getcwd()		#current dir
 	f = cwd + os.path.sep + "Cache" + os.path.sep + filenameToCheck	
 	hashvalue = hashlib.md5(open(f,'rb').read()).hexdigest()
@@ -144,6 +149,4 @@ if __name__ == '__main__':
 			readFile(commandArray[1])
 
 	clientApp.run(host = 'localhost', port=5000, debug = True)
-
-
 
