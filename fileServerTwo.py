@@ -4,29 +4,23 @@ from flask import make_response
 from flask import request
 from flask import send_file
 import os
-filesArray =[]
 DIRECTORY = "\SERVER_TWO_FOLDER\\"
 fileServerTwo = Flask(__name__)
 
-#Function which takes a file as input and stores the file
+#Function which takes a file as input and stores the file locally.
 @fileServerTwo.route('/serverTwo/upload', methods = ['POST'])
 def recieve_File():
 	if not request.files:
 		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 405)
 	cd = get_cd()
-	print ("CD = " + cd) 
 	f = request.files['file']
 	nameOfFile = request.form['fileName']
-	data = request.form['fileName']
-	print ("CD = " + cd+ "\\" + DIRECTORY) 
 	f.save(cd+ "\\" + DIRECTORY + nameOfFile)
 	return ('file uploaded successfully', 201)
 
-
-
+#Returns the bytes of a file requested if stored in file server.
 @fileServerTwo.route('/serverTwo/read', methods = ['GET'])
 def read_File():
-	print("ststststs")
 	responseDictionary = request.json
 	filenameToGet= responseDictionary['file']
 	print("Looking for file:")
@@ -40,11 +34,8 @@ def read_File():
 	except:
 		abort (400)
 
-
-
 def get_cd():
 	res = os.getcwd()
-	print("res = " + res)
 	return res
 
 if __name__ == '__main__':

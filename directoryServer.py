@@ -6,17 +6,13 @@ from flask import g
 import requests
 import copy
 from random import randint
-
-
 import sqlite3
 import os
-filesArray =[]
+
 DIRECTORY = "\DIRECTORY_Server\\"
 dirServer = Flask(__name__)
-
 fileServers = {1 : 'http://localhost:5010/serverOne',
 				2 : 'http://localhost:5020/serverTwo'}
-
 FILE_DATABASE = "dirserdb.db"
 
 #Recieve File
@@ -28,16 +24,11 @@ def recieve_File():
 	if not request.form:
 		return make_response(jsonify({"ERROR" : "NOT FOUND"}), 404)
 	cd = get_cd()
-	print ("CD = " + cd) 
 	nameOfFile = request.form['fileName']
 	data = request.form['fileName']
-	print ("CD = " + cd+ "\\" + DIRECTORY) 
-	#f.save(cd+ "\\" + DIRECTORY + nameOfFile)
-	print("jkd")
+	print ("CD = " + cd+ os.path.sep + DIRECTORY) 
 	hashValue = request.form['hashvalue']
-#	hashValue='34343'
 	print("Data = %d", hashValue)
-
 
 	#FIND IF FILE ALREADY EXISTS		
 	connectionMaster = sqlite3.connect(FILE_DATABASE)
@@ -52,46 +43,22 @@ def recieve_File():
 		RepServer = randint(1,len(fileServers))
 		while (RepServer==Master):
 			RepServer= randint(1,len(fileServers))
-
 		addRowToDB(FILE_DATABASE,nameOfFile,Master,RepServer,hashValue)
-
 	else:
 		print("Updating existing file")
 		Master = int(master_server[0][0])
 		cursorMaster.execute("SELECT replicate_server FROM fileDirectory WHERE filename = ?;", (nameOfFile,))
 		replicate_server = cursorMaster.fetchall()
 		RepServer = int(replicate_server[0][0])	
-		print("RepServer = ")
-		print("Hash value to insert = ")
-		print(RepServer)
 		com = "UPDATE fileDirectory SET hashValue = ? WHERE filename = ?;"
-		print(hashValue)
-		print(nameOfFile)
 		params = (hashValue,nameOfFile)
 		cursorMaster.execute(com,params)
 		connectionMaster.commit()
-		print("lalala")
 	printDB("fileDirectory", "dirserdb.db")	
 	servers = {'Master' : fileServers[Master], 'Replicate' : fileServers[RepServer]}
 	return make_response(jsonify(servers), 200)
 
-
-
-def upload_File(filenameToSend,servers,f):
-	for fileServerID in servers:
-		url = fileServers[fileServerID]
-		url = url+"/upload"
-		print("File to send = %c", filenameToSend)
-		print (fileToSend)
-		dataToSend={	'fileName' : filenameToSend	}
-	#	sentSuccessfully = 0
-		try:
-			serverResponse= requests.post(url,files = f,data=dataToSend)
-		#	sentSuccessfully=1
-		except:    # This is the correct syntax
-			print ("Could NOT connect!")
-
-
+#Create a database to track all files on system, their master and replicate server urls and the current hash value of the files.
 def createDatabase():
 	if (not os.path.isfile(FILE_DATABASE)):
 		print ("Create DataBase %s" % FILE_DATABASE)
@@ -132,10 +99,6 @@ def get_Location_Of_File():
 		print("Server = ", master_server[0][0])
 		return fileServers[int(master_server[0][0])], 200
 
-
-
-
-
 #Returns the hash value of a file in the directory
 @dirServer.route('/dirServer/returnHash', methods = ['GET'])
 def get_Hash_Of_File():
@@ -145,24 +108,15 @@ def get_Hash_Of_File():
 	cursorMaster = connectionMaster.cursor()
 	cursorMaster.execute("SELECT hashValue FROM fileDirectory WHERE filename = ?;", (filenameToGet,))
 	HashValue = cursorMaster.fetchall()
-	print("Hash Value is equal to = ")
 	print(HashValue)
 	if (not HashValue):
-		print("Not HERE")
+		print("Could not find file in database")
 		abort(400)
 	else:
 		print("HashValue = ", HashValue[0][0])
 		return HashValue[0][0], 200
 
-
-
-
-
-
-
-
-
-
+#Print the database.
 def printDB(nameOfDB, DataBase_NAME):
 	connection = sqlite3.connect(DataBase_NAME)
 	cursor = connection.cursor()
@@ -173,6 +127,7 @@ def printDB(nameOfDB, DataBase_NAME):
 		print (x)
 	print ("-------------------------------")
 
+#Adds a new file to the databale, taking in all parameters of the fileDirectory
 def addRowToDB(nameOfDB, fileName,master,rep,hash):
 	connectionMaster = sqlite3.connect(FILE_DATABASE)
 	cursorMaster = connectionMaster.cursor()
@@ -182,18 +137,15 @@ def addRowToDB(nameOfDB, fileName,master,rep,hash):
 	connectionMaster.commit()	
 	printDB("fileDirectory", nameOfDB)
 
-
-
 def get_cd():
 	res = os.getcwd()
 	return res
 
 if __name__ == '__main__':
 	cwd = os.getcwd()
-	print("START THEM UP BURBY")
 	createDatabase()
-	if not os.path.isdir(cwd + "\\" + DIRECTORY):
-		os.mkdir(cwd + "\\" + DIRECTORY)
+	if not os.path.isdir(cwd + os.path.sep + DIRECTORY):
+		os.mkdir(cwd + os.path.sep + DIRECTORY)
 	dirServer.run(host = 'localhost', port=5030, debug = False)
 
 

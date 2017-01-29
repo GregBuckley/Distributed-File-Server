@@ -4,7 +4,6 @@ from flask import make_response
 from flask import request
 from flask import send_file
 import os
-filesArray =[]
 DIRECTORY = "SERVER_ONE_FOLDER"
 fileServerOne = Flask(__name__)
 
@@ -22,11 +21,9 @@ def recieve_File():
 	f.save(cd+ os.path.sep + DIRECTORY + os.path.sep + nameOfFile)
 	return ('file uploaded successfully', 201)
 
-
-
+#Returns the bytes of a file requested if stored in file server.
 @fileServerOne.route('/serverOne/read', methods = ['GET'])
 def read_File():
-	print("ststststs")
 	responseDictionary = request.json
 	filenameToGet= responseDictionary['file']
 	print("Looking for file:")
@@ -40,8 +37,7 @@ def read_File():
 	except:
 		abort (400)
 
-
-
+#Returns the current working directory.
 def get_cd():
 	res = os.getcwd()
 	print("res = " + res)
