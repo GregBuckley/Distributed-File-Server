@@ -1,6 +1,5 @@
-# Distributed Systems - Project
+# Distributed Systems - Lab 2
 Student Name: Gregory Buckley
-
 Student ID: 13325220
 
 This assignment has been written using Python 3.
@@ -12,6 +11,7 @@ All file information including bytes of files, hash values and names are contain
 The objective of this assignment is to create a distributed file server. The server must be secure and contain a number of features.
 
 My design  is created with use of four main types of systems.
+-------------------
 
 **The Client Proxy**
 The client is responsible for handling all user input for writing and reading files within the system. The client has a constant access to connect to the directory server and the locking server. To run the Client Proxy, the user enters the required command ('read' or 'write) followed by a file name. The file names may be loaded in from the cache if needed to read or are read in from a User storage folder for writing out to the file servers.
@@ -23,10 +23,12 @@ The Directory Server contains a list of all active file servers and directs work
 The locking server contains a database noting each file distributed between the system and it's current state, whether it is locked by a client currently writing to it, or unlocked.
 
 **The File Servers**
+
 Upon running of the file servers, a port number is entered which the file server will run on. The directory server is then contacted and the file server is ready to recieve files. Any number of File Servers can be created in the system. The File servers store the files it recieves locally.
 
 
 The following features are supported by the system:
+-------------------
 
 **Directory Server**
 After the user enters the command to write a new file to the system, the Directory Server is contacted. The Client sends a json packet containing the name of the file and the hash value of the file. The Directory Server allocates a Master Server and a Replicate Server from the list of current active File Servers and returns their URLs to the Client. The Directory server notes these servers, the file and it's hashvale into it's database.
