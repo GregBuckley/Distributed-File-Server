@@ -1,4 +1,4 @@
-# Distributed Systems - Lab 2
+# Distributed Systems - Project
 Student Name: Gregory Buckley
 Student ID: 13325220
 
