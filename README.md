@@ -57,4 +57,15 @@ Upon running of the system, a CA has not signed the certificates as that would r
 Transactions are supported by all file systems being constantly updated with the most current file in the system. When a user wishes to write their file, both the Master and Replicate servers are informed by the Client Proxy.
 
 
+**Dependencies**
+The following are required to be installed to run the system:
+- Flask
+```sh
+$ pip3 install Flask
+```
+
+- Python3 Requests
+```sh
+$ pip3 install Requests
+```
 
