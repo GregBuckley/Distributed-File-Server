@@ -2,6 +2,7 @@ from flask import Flask, jsonify
 from flask import abort
 from flask import make_response
 from flask import request
+from OpenSSL import SSL
 from flask import g
 import requests
 import copy
@@ -12,6 +13,11 @@ import sqlite3
 import os
 DIRECTORY = "\Lock_Server\\"
 lockServer = Flask(__name__)
+
+
+context = SSL.Context(SSL.SSLv23_METHOD)
+cer = os.path.join(os.path.dirname(__file__), os.getcwd()+os.path.sep+'HTTPS CERTS'+os.path.sep+'Locking_Server'+os.path.sep+'server.crt')
+key = os.path.join(os.path.dirname(__file__), os.getcwd()+os.path.sep+'HTTPS CERTS'+os.path.sep+'Locking_Server'+os.path.sep+'server.key')
 
 
 LOCK_DATABASE = "lockdb.db"
@@ -61,7 +67,7 @@ def releaseLock():
 	cursorMaster.execute(com,params)
 	connectionMaster.commit()	
 	printDB("lockDirectory", "lockdb.db")
-	return ('file sucessfully unlocked', 201)
+	return ('file sucessfully unlocked', 200)
 
 #Returns the address of the file server for the client to contact to recieve their file
 @lockServer.route('/lockServer/read', methods = ['GET'])
@@ -103,10 +109,11 @@ def check_If_Lock_Open():
 
 
 if __name__ == '__main__':
+	context = (cer,key)
 	cwd = os.getcwd()
 	createDatabase()
 	#check_If_Lock_Open()
 	if not os.path.isdir(cwd + "\\" + DIRECTORY):
 		os.mkdir(cwd + "\\" + DIRECTORY)
-	lockServer.run(host = 'localhost', port=5050, debug = False)
+	lockServer.run(host = 'localhost', port=5050, debug = False, ssl_context=context)
 

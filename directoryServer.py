@@ -3,6 +3,7 @@ from flask import abort
 from flask import make_response
 from flask import request
 from flask import g
+from OpenSSL import SSL
 import requests
 import copy
 from random import randint
@@ -11,9 +12,14 @@ import os
 
 DIRECTORY = "\DIRECTORY_Server\\"
 dirServer = Flask(__name__)
-fileServers = {1 : 'http://localhost:5010/serverOne',
-				2 : 'http://localhost:5020/serverTwo'}
+fileServers = {}
 FILE_DATABASE = "dirserdb.db"
+
+
+context = SSL.Context(SSL.SSLv23_METHOD)
+cer = os.path.join(os.path.dirname(__file__), os.getcwd()+os.path.sep+'HTTPS CERTS'+os.path.sep+'Directory_Server'+os.path.sep+'server.crt')
+key = os.path.join(os.path.dirname(__file__), os.getcwd()+os.path.sep+'HTTPS CERTS'+os.path.sep+'Directory_Server'+os.path.sep+'server.key')
+
 
 #Recieve File
 #Check if file has been sent before
@@ -116,6 +122,23 @@ def get_Hash_Of_File():
 		print("HashValue = ", HashValue[0][0])
 		return HashValue[0][0], 200
 
+#Add a new server to the system
+@dirServer.route('/dirServer/addServer', methods = ['POST'])
+def add_Server():
+	#responseDictionary = request.json
+	serverURL = request.form['serverURL']
+	updateDict ={len(fileServers) +1 : serverURL}
+	
+	if(not serverURL in fileServers):
+		fileServers.update(updateDict)
+	else:
+		print("Server Already Exists")
+
+	for x in fileServers:
+		print(fileServers[x])
+
+	return "Server succesfully added", 200
+
 #Print the database.
 def printDB(nameOfDB, DataBase_NAME):
 	connection = sqlite3.connect(DataBase_NAME)
@@ -142,10 +165,11 @@ def get_cd():
 	return res
 
 if __name__ == '__main__':
+	context = (cer,key)
 	cwd = os.getcwd()
 	createDatabase()
 	if not os.path.isdir(cwd + os.path.sep + DIRECTORY):
 		os.mkdir(cwd + os.path.sep + DIRECTORY)
-	dirServer.run(host = 'localhost', port=5030, debug = False)
+	dirServer.run(host = 'localhost', port=5030, debug = False, ssl_context=context)
 
 
