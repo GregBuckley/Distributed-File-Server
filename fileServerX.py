@@ -25,7 +25,7 @@ def recieve_File():
 	f = request.files['file']
 	print(f)
 	nameOfFile = request.form['fileName']
-	print ("CD = " + cd+ "\\" + serverPort) 
+	print ("CD = " + cd+ os.path.sep + serverPort) 
 	f.save(cd+ os.path.sep + serverPort +"_Folder"+ os.path.sep + nameOfFile)
 	return ('file uploaded successfully', 200)
 
@@ -58,8 +58,8 @@ if __name__ == '__main__':
 	serverPort = input("\nPlease enter port to run fileServer. (Reccommended Ports: 5060 - 5090):\n")
 
 	cwd = os.getcwd()
-	if not os.path.isdir(cwd + "\\" + serverPort+"_Folder"):
-		os.mkdir(cwd + "\\" + serverPort+"_Folder")
+	if not os.path.isdir(cwd + os.path.sep + serverPort+"_Folder"):
+		os.mkdir(cwd + os.path.sep + serverPort+"_Folder")
 
 	serverURL =  {'serverURL': 'https://localhost:'+serverPort}
 	serverResponse= requests.post(DIR_SERVER+"/addServer",data=serverURL, verify = False)
